@@ -2,108 +2,171 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invisible Maze - Lobby</title>
+    <title>Invisible Maze 3D</title>
     <style>
-        body { 
-            font-family: monospace; 
-            background-color: #111; 
-            color: #fff; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-        }
-        .container {
-            background: #222;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,255,204,0.2);
-            text-align: center;
-        }
-        button { 
-            padding: 10px 20px; 
-            font-size: 16px; 
-            cursor: pointer; 
-            background-color: #00ffcc; 
-            border: none; 
-            border-radius: 5px; 
-            font-weight: bold;
-            margin: 10px;
-        }
-        input {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #00ffcc;
-            background: #333;
-            color: #fff;
-            text-align: center;
-            text-transform: uppercase;
-        }
-        #status { 
-            margin-top: 20px; 
-            color: #888; 
-            font-size: 16px;
-        }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #050505; font-family: monospace; color: #fff; }
+        .ui-panel { position: absolute; z-index: 10; background: rgba(20,20,20,0.85); padding: 25px; border-radius: 8px; border: 1px solid #00ffcc; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(0,255,204,0.2); }
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #00ffcc; color: #111; border: none; border-radius: 4px; cursor: pointer; margin: 10px; }
+        input { padding: 12px; font-size: 16px; background: #222; border: 1px solid #00ffcc; color: #fff; text-align: center; border-radius: 4px; text-transform: uppercase; }
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 5; background: rgba(0,0,0,0.7); padding: 15px; border: 1px solid #00ffcc; display: none; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Invisible Maze Lobby</h1>
-        
-        <div>
-            <button id="createBtn">CREATE ROOM</button>
-        </div>
-        
-        <div style="margin-top: 20px;">
-            <input type="text" id="roomCodeInput" placeholder="ENTER ROOM CODE" maxlength="4">
-            <button id="joinBtn">JOIN ROOM</button>
-        </div>
+    <div id="hud">ROLE: <span id="hud-role" style="color: #00ffcc; font-weight: bold;"></span></div>
 
-        <div id="status">Status: Connecting to base station...</div>
+    <div class="ui-panel" id="lobby">
+        <h1>Invisible Maze 3D</h1>
+        <button id="btn-create">CREATE GAME</button>
+        <div style="margin-top: 25px;">
+            <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
+            <button id="btn-join">JOIN GAME</button>
+        </div>
+        <p id="status" style="color: #888; margin-top: 15px;">Connecting to server infrastructure...</p>
     </div>
 
     <script>
-        const statusDiv = document.getElementById('status');
-        const createBtn = document.getElementById('createBtn');
-        const joinBtn = document.getElementById('joinBtn');
-        const roomCodeInput = document.getElementById('roomCodeInput');
-        
-        // Open the connection pipeline immediately when the page loads
         const socket = new WebSocket("ws://localhost:8085/game");
+        const statusText = document.getElementById("status");
 
-        socket.onopen = () => {
-            statusDiv.innerHTML = "Connected to Server. Ready to create or join a room.";
-            statusDiv.style.color = "#00ffcc";
+        let currentPos = { r: 0, c: 0 };
+        let playerMesh = null;
+        let myRole = "";
+
+        socket.onopen = () => statusText.innerText = "Connected to Server. Ready.";
+
+        document.getElementById("btn-create").onclick = () => socket.send("CREATE");
+        document.getElementById("btn-join").onclick = () => {
+            const code = document.getElementById("input-code").value.trim().toUpperCase();
+            if(code.length === 4) socket.send("JOIN:" + code);
         };
 
-        // When a button is clicked, we send a string token message to the backend
-        createBtn.addEventListener('click', () => {
-            socket.send("CREATE");
-        });
-
-        joinBtn.addEventListener('click', () => {
-            const code = roomCodeInput.value.trim().toUpperCase();
-            if (code.length === 4) {
-                socket.send("JOIN:" + code);
-            } else {
-                alert("Please enter a valid 4-character room code.");
-            }
-        });
-
-        // Listen for instructions returning back from the Java server
         socket.onmessage = (event) => {
-            statusDiv.innerHTML = "📩 " + event.data;
-            statusDiv.style.color = "#ffffff";
+            const msg = event.data;
+            if(msg.startsWith("LOBBY_STATUS:")) {
+                statusText.innerText = msg.replace("LOBBY_STATUS:", "");
+            } else if(msg.startsWith("START_GAME|")) {
+                const parts = msg.split("|");
+                myRole = parts[1];
+                const matrix = JSON.parse(parts[2]);
+
+                document.getElementById("lobby").style.display = "none";
+                document.getElementById("hud").style.display = "block";
+                document.getElementById("hud-role").innerText = myRole;
+
+                build3DWorld(myRole, matrix);
+            } else if(msg.startsWith("PLAYER_MOVED|")) {
+                const parts = msg.split("|");
+                currentPos.r = parseInt(parts[1]);
+                currentPos.c = parseInt(parts[2]);
+
+                if(playerMesh) {
+                    playerMesh.position.set(currentPos.c, 0.4, currentPos.r);
+                }
+            }
         };
 
-        socket.onclose = () => {
-            statusDiv.innerHTML = "❌ Connection to server lost.";
-            statusDiv.style.color = "#ff3333";
-        };
+        function build3DWorld(role, matrix) {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambient);
+            const point = new THREE.PointLight(0x00ffcc, 1.5, 40);
+            point.position.set(3, 6, 3);
+            scene.add(point);
+
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(2.5, 0, 2.5);
+            scene.add(floor);
+
+            const wallGeo = new THREE.BoxGeometry(1, 2, 1);
+            const wallMatVisible = new THREE.MeshStandardMaterial({ color: 0x0055ff, roughness: 0.4 });
+            const wallMatInvisible = new THREE.MeshStandardMaterial({ color: 0x222222, transparent: true, opacity: 0.05 });
+
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[r].length; c++) {
+                    const cell = matrix[r][c];
+                    
+                    if (cell === 1) {
+                        const material = (role === "NAVIGATOR") ? wallMatVisible : wallMatInvisible;
+                        const wallMesh = new THREE.Mesh(wallGeo, material);
+                        wallMesh.position.set(c, 1, r);
+                        scene.add(wallMesh);
+                    } else if (cell === 2) {
+                        const start = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.7), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+                        start.position.set(c, 0.025, r);
+                        scene.add(start);
+                        
+                        currentPos.r = r;
+                        currentPos.c = c;
+                    } else if (cell === 3) {
+                        const end = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.7), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                        end.position.set(c, 0.025, r);
+                        scene.add(end);
+                    }
+                }
+            }
+
+            const sphereGeo = new THREE.SphereGeometry(0.3, 32, 32);
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+            playerMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            playerMesh.position.set(currentPos.c, 0.4, currentPos.r);
+            scene.add(playerMesh);
+
+            if (role === "NAVIGATOR") {
+                camera.position.set(2.5, 9, 8);
+                camera.lookAt(2.5, 0, 2.5);
+            } else {
+                camera.position.set(2.5, 5, 7); 
+                camera.lookAt(2.5, 0, 2.5);
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if(myRole !== "EXPLORER") return;
+
+                let nextR = currentPos.r;
+                let nextC = currentPos.c;
+
+                if (e.key === 'w' || e.key === 'ArrowUp') nextR--;
+                if (e.key === 's' || e.key === 'ArrowDown') nextR++;
+                if (e.key === 'a' || e.key === 'ArrowLeft') nextC--;
+                if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
+
+                if(nextR !== currentPos.r || nextC !== currentPos.c) {
+                    socket.send("MOVE:" + nextR + "," + nextC);
+                }
+            });
+
+            function renderFrame() {
+                requestAnimationFrame(renderFrame);
+
+                if (role === "NAVIGATOR") {
+                    const time = Date.now() * 0.0003;
+                    camera.position.x = 2.5 + 6 * Math.sin(time);
+                    camera.position.z = 2.5 + 6 * Math.cos(time);
+                    camera.lookAt(2.5, 0, 2.5);
+                }
+
+                renderer.render(scene, camera);
+            }
+            renderFrame();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
     </script>
 </body>
 </html>

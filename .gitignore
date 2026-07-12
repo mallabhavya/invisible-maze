@@ -19,3 +19,24 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/git add .
+
+
+# Ignore backend build artifacts
+**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+
+# IDE and Editor Files
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

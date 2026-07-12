@@ -8,6 +8,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.Arrays;
+
 @Component
 public class MazeWebSocketHandler extends TextWebSocketHandler {
 
@@ -19,36 +21,61 @@ public class MazeWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        System.out.println("🔌 [SERVER] Client connected. Handshake complete. Session ID: " + session.getId());
-        // We wait for them to click a button before placing them in a room now!
+        System.out.println("🔌 [SERVER] Client connected. ID: " + session.getId());
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload().trim();
-        System.out.println("📥 [SERVER] Received instruction: " + payload + " from Session: " + session.getId());
+        System.out.println("📥 [SERVER] Received instruction: " + payload);
 
         if (payload.equals("CREATE")) {
-            // Player wants a brand new room
             GameRoom newRoom = roomManager.createRoom();
             String result = roomManager.joinRoom(newRoom.getRoomId(), session);
-            session.sendMessage(new TextMessage("Room created successfully! Code: " + newRoom.getRoomId() + " (" + result + ")"));
+            session.sendMessage(new TextMessage("LOBBY_STATUS:Room created! Code: " + newRoom.getRoomId()));
             
         } else if (payload.startsWith("JOIN:")) {
-            // Player typed a room code (e.g., "JOIN:A1B2")
             String codeToJoin = payload.split(":")[1].toUpperCase();
             String result = roomManager.joinRoom(codeToJoin, session);
             
             if (result.contains("ERROR")) {
-                session.sendMessage(new TextMessage(result)); // Send error message back (e.g. Room not found or full)
+                session.sendMessage(new TextMessage("LOBBY_STATUS:" + result)); 
             } else {
-                session.sendMessage(new TextMessage("Successfully entered room " + codeToJoin + "! (" + result + ")"));
+                GameRoom room = roomManager.getRoom(codeToJoin);
+                String gridJson = Arrays.deepToString(room.getMazeGrid());
+
+                for (WebSocketSession activeSession : room.getSessions().values()) {
+                    String playerRole = room.getRole(activeSession.getId()).toString();
+                    String gameDataPackage = "START_GAME|" + playerRole + "|" + gridJson;
+                    activeSession.sendMessage(new TextMessage(gameDataPackage));
+                }
+            }
+        } else if (payload.startsWith("MOVE:")) {
+            String[] parts = payload.split(":")[1].split(",");
+            int targetRow = Integer.parseInt(parts[0]);
+            int targetCol = Integer.parseInt(parts[1]);
+
+            GameRoom room = roomManager.getRoomBySession(session.getId());
+
+            if (room != null) {
+                int[][] grid = room.getMazeGrid();
+
+                if (targetRow >= 0 && targetRow < grid.length && targetCol >= 0 && targetCol < grid[0].length) {
+                    if (grid[targetRow][targetCol] != 1) { 
+                        room.setExplorerPosition(targetRow, targetCol);
+
+                        String moveNotification = "PLAYER_MOVED|" + targetRow + "|" + targetCol;
+                        for (WebSocketSession activeSession : room.getSessions().values()) {
+                            activeSession.sendMessage(new TextMessage(moveNotification));
+                        }
+                    }
+                }
             }
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        System.out.println("❌ [SERVER] Client disconnected. Session ID: " + session.getId());
+        System.out.println("❌ [SERVER] Client disconnected. ID: " + session.getId());
     }
 }
