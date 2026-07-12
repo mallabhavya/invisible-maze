@@ -86,25 +86,22 @@ cd invisible-maze-server
 Runs on `localhost:8080`, WebSocket endpoint at `/game`.
 
 ### Frontend
-```bash
-cd invisible-maze-client
-npm install
-npm run dev
-```
-Runs on `localhost:5173` by default.
+Locate your local index.html file directory.
+Open index.html inside a standard browser window (Chrome, Edge, Brave).
+Open a separate Incognito Tab pointing to the same file to run as Player 2.
 
-## Current status
+### Current status
+🚧 In Active Development. The core real-time network sync loop is completely functional! The server-authoritative movement engine validates player steps against wall collisions, instantly updating the low-poly humanoid character model across both screens simultaneously on a 6x6 test grid.
 
-🚧 In active development. Core WebSocket handshake and room management are being built first; maze rendering and gameplay come next.
-
-## Roadmap
-
-- [x] Basic WebSocket connection handshake
-- [ ] Room creation and join-by-code
-- [ ] Server-side maze generation
-- [ ] Explorer movement with server-side validation
-- [ ] Navigator top-down 3D rendering
-- [ ] Explorer first-person rendering with fog-of-war
-- [ ] Traps and win/lose conditions
-- [ ] Round timer
-- [ ] Polish pass — restart flow, UI cleanup
+### Roadmap
+[x] Basic WebSocket connection handshake pipeline
+[x] Room creation and join-by-code configuration
+[x] Server-authoritative step validation (Wall collision checking)
+[x] Immersive third-person camera perspective with Fog-of-War overlay for the Explorer
+[x] Dynamic rotating overhead display configuration for the Navigator
+[x] Low-poly Humanoid character avatar assembly (replaces temporary sphere markers)
+[ ] Upgrade to high-density structural maze layouts (16x16 Matrix maps with 10-15 turns)
+[ ] Navigator map selection preview menu
+[ ] Round timer mechanics and trap modules
+[ ] Win / Lose state checking loop
+[ ] Polished frontend UI lobby redesign
