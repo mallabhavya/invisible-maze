@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invisible Maze - Lobby</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            background-color: #111; 
+            color: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .container {
+            background: #222;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,255,204,0.2);
+            text-align: center;
+        }
+        button { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background-color: #00ffcc; 
+            border: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            margin: 10px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #00ffcc;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        #status { 
+            margin-top: 20px; 
+            color: #888; 
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Invisible Maze Lobby</h1>
+        
+        <div>
+            <button id="createBtn">CREATE ROOM</button>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <input type="text" id="roomCodeInput" placeholder="ENTER ROOM CODE" maxlength="4">
+            <button id="joinBtn">JOIN ROOM</button>
+        </div>
+
+        <div id="status">Status: Connecting to base station...</div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const createBtn = document.getElementById('createBtn');
+        const joinBtn = document.getElementById('joinBtn');
+        const roomCodeInput = document.getElementById('roomCodeInput');
+        
+        // Open the connection pipeline immediately when the page loads
+        const socket = new WebSocket("ws://localhost:8085/game");
+
+        socket.onopen = () => {
+            statusDiv.innerHTML = "Connected to Server. Ready to create or join a room.";
+            statusDiv.style.color = "#00ffcc";
+        };
+
+        // When a button is clicked, we send a string token message to the backend
+        createBtn.addEventListener('click', () => {
+            socket.send("CREATE");
+        });
+
+        joinBtn.addEventListener('click', () => {
+            const code = roomCodeInput.value.trim().toUpperCase();
+            if (code.length === 4) {
+                socket.send("JOIN:" + code);
+            } else {
+                alert("Please enter a valid 4-character room code.");
+            }
+        });
+
+        // Listen for instructions returning back from the Java server
+        socket.onmessage = (event) => {
+            statusDiv.innerHTML = "📩 " + event.data;
+            statusDiv.style.color = "#ffffff";
+        };
+
+        socket.onclose = () => {
+            statusDiv.innerHTML = "❌ Connection to server lost.";
+            statusDiv.style.color = "#ff3333";
+        };
+    </script>
+</body>
+</html>
