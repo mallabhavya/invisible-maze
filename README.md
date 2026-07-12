@@ -20,7 +20,7 @@ This project was built as a portfolio/capstone piece to demonstrate real-time mu
 | Layer | Technology |
 |---|---|
 | Backend | Java 21, Spring Boot, Spring WebSocket |
-| Frontend | React, TypeScript, Vite, three.js |
+| Frontend | HTML / three.js |
 | Communication | Raw WebSocket (JSON messages), no message broker |
 | Data storage | In-memory only — no database |
 
