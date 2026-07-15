@@ -2,28 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invisible Maze 3D</title>
+    <title>Invisible Maze 3D: Garden Edition</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #050505; font-family: monospace; color: #fff; }
-        .ui-panel { position: absolute; z-index: 10; background: rgba(20,20,20,0.85); padding: 25px; border-radius: 8px; border: 1px solid #00ffcc; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(0,255,204,0.2); }
-        button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #00ffcc; color: #111; border: none; border-radius: 4px; cursor: pointer; margin: 10px; }
-        input { padding: 12px; font-size: 16px; background: #222; border: 1px solid #00ffcc; color: #fff; text-align: center; border-radius: 4px; text-transform: uppercase; }
-        #hud { position: absolute; top: 20px; left: 20px; z-index: 5; background: rgba(0,0,0,0.7); padding: 15px; border: 1px solid #00ffcc; display: none; }
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #87CEEB; font-family: monospace; color: #fff; }
+        .ui-panel { position: absolute; z-index: 10; background: rgba(10, 30, 10, 0.9); padding: 25px; border-radius: 8px; border: 2px solid #2ecc71; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #2ecc71; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        button:hover { background: #27ae60; }
+        input { padding: 12px; font-size: 16px; background: #1a3322; border: 1px solid #2ecc71; color: #fff; text-align: center; border-radius: 4px; text-transform: uppercase; }
+        #hud { position: absolute; top: 20px; left: 20px; z-index: 5; background: rgba(10,30,10,0.8); padding: 15px; border: 1px solid #2ecc71; border-radius: 5px; display: none; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-    <div id="hud">ROLE: <span id="hud-role" style="color: #00ffcc; font-weight: bold;"></span></div>
+    <div id="hud">
+        ROLE: <span id="hud-role" style="color: #2ecc71; font-weight: bold;"></span> | 
+        STAGE: <span id="hud-stage" style="color: #ffcc00; font-weight: bold;">1/5</span>
+    </div>
 
     <div class="ui-panel" id="lobby">
-        <h1>Invisible Maze 3D</h1>
+        <h1>🌳 Garden Labyrinth 3D 🌳</h1>
         <button id="btn-create">CREATE GAME</button>
         <div style="margin-top: 25px;">
             <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
             <button id="btn-join">JOIN GAME</button>
         </div>
-        <p id="status" style="color: #888; margin-top: 15px;">Connecting to server infrastructure...</p>
+        <p id="status" style="color: #bbb; margin-top: 15px;">Connecting to server world infrastructure...</p>
     </div>
 
     <script>
@@ -31,8 +42,10 @@
         const statusText = document.getElementById("status");
 
         let currentPos = { r: 0, c: 0 };
-        let playerMesh = null;
+        let targetPos = { r: 0, c: 0 };
+        let playerGroup = null; 
         let myRole = "";
+        let globalRoundCounter = 1;
 
         socket.onopen = () => statusText.innerText = "Connected to Server. Ready.";
 
@@ -45,7 +58,12 @@
         socket.onmessage = (event) => {
             const msg = event.data;
             if(msg.startsWith("LOBBY_STATUS:")) {
-                statusText.innerText = msg.replace("LOBBY_STATUS:", "");
+                const innerStatus = msg.replace("LOBBY_STATUS:", "");
+                statusText.innerText = innerStatus;
+                if (innerStatus.includes("CONGRATULATIONS")) {
+                    document.getElementById("lobby").style.display = "block";
+                    document.getElementById("hud").style.display = "none";
+                }
             } else if(msg.startsWith("START_GAME|")) {
                 const parts = msg.split("|");
                 myRole = parts[1];
@@ -54,95 +72,163 @@
                 document.getElementById("lobby").style.display = "none";
                 document.getElementById("hud").style.display = "block";
                 document.getElementById("hud-role").innerText = myRole;
+                document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
+
+                const existingCanvas = document.querySelector('canvas');
+                if (existingCanvas) {
+                    existingCanvas.remove();
+                }
 
                 build3DWorld(myRole, matrix);
             } else if(msg.startsWith("PLAYER_MOVED|")) {
                 const parts = msg.split("|");
-                currentPos.r = parseInt(parts[1]);
-                currentPos.c = parseInt(parts[2]);
-
-                if(playerMesh) {
-                    playerMesh.position.set(currentPos.c, 0.4, currentPos.r);
-                }
+                targetPos.r = parseInt(parts[1]);
+                targetPos.c = parseInt(parts[2]);
             }
         };
 
         function build3DWorld(role, matrix) {
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
+            scene.background = new THREE.Color(0x7ec0ee);
+            scene.fog = new THREE.FogExp2(0x7ec0ee, 0.015);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.2);
-            scene.add(ambient);
-            const point = new THREE.PointLight(0x00ffcc, 1.5, 40);
-            point.position.set(3, 6, 3);
-            scene.add(point);
+            const mapRows = matrix.length;
+            const mapCols = matrix[0].length;
+            const centerR = mapRows / 2 - 0.5;
+            const centerC = mapCols / 2 - 0.5;
 
-            const floorGeo = new THREE.PlaneGeometry(20, 20);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 0.8);
+            sunLight.position.set(centerC - 10, 20, centerR - 10);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            scene.add(sunLight);
+
+            const floorGeo = new THREE.PlaneGeometry(mapCols * 3, mapRows * 3);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x557a2b, roughness: 0.9 });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
-            floor.position.set(2.5, 0, 2.5);
+            floor.position.set(centerC, 0, centerR);
+            floor.receiveShadow = true;
             scene.add(floor);
 
-            const wallGeo = new THREE.BoxGeometry(1, 2, 1);
-            const wallMatVisible = new THREE.MeshStandardMaterial({ color: 0x0055ff, roughness: 0.4 });
-            const wallMatInvisible = new THREE.MeshStandardMaterial({ color: 0x222222, transparent: true, opacity: 0.05 });
+            const wallGeo = new THREE.BoxGeometry(1, 2.2, 1);
+            const hedgeMatVisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, roughness: 0.8 });
+            const hedgeMatInvisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, transparent: true, opacity: 0.02 });
 
-            for (let r = 0; r < matrix.length; r++) {
-                for (let c = 0; c < matrix[r].length; c++) {
+            // CRITICAL RESET: Find start positions dynamically BEFORE drawing entities
+            for (let r = 0; r < mapRows; r++) {
+                for (let c = 0; c < mapCols; c++) {
+                    if (matrix[r][c] === 2) {
+                        currentPos.r = r; currentPos.c = c;
+                        targetPos.r = r; targetPos.c = c;
+                    }
+                }
+            }
+
+            for (let r = 0; r < mapRows; r++) {
+                for (let c = 0; c < mapCols; c++) {
                     const cell = matrix[r][c];
                     
                     if (cell === 1) {
-                        const material = (role === "NAVIGATOR") ? wallMatVisible : wallMatInvisible;
+                        const material = (role === "NAVIGATOR") ? hedgeMatVisible : hedgeMatInvisible;
                         const wallMesh = new THREE.Mesh(wallGeo, material);
-                        wallMesh.position.set(c, 1, r);
+                        wallMesh.position.set(c, 1.1, r);
+                        wallMesh.castShadow = (role === "NAVIGATOR");
+                        wallMesh.receiveShadow = (role === "NAVIGATOR");
                         scene.add(wallMesh);
                     } else if (cell === 2) {
-                        const start = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.7), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-                        start.position.set(c, 0.025, r);
+                        const start = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.02, 0.9), new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.7 }));
+                        start.position.set(c, 0.01, r);
                         scene.add(start);
-                        
-                        currentPos.r = r;
-                        currentPos.c = c;
                     } else if (cell === 3) {
-                        const end = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.7), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                        end.position.set(c, 0.025, r);
+                        // Renders a high-contrast golden goal pad perfectly visible to all roles
+                        const end = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.9), new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.2 }));
+                        end.position.set(c, 0.05, r);
                         scene.add(end);
                     }
                 }
             }
 
-            const sphereGeo = new THREE.SphereGeometry(0.3, 32, 32);
-            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-            playerMesh = new THREE.Mesh(sphereGeo, sphereMat);
-            playerMesh.position.set(currentPos.c, 0.4, currentPos.r);
-            scene.add(playerMesh);
+            // STYLIZED HUMANOID CHARACTER GROUP
+            playerGroup = new THREE.Group();
+            
+            const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), new THREE.MeshStandardMaterial({ color: 0xd35400 }));
+            bodyMesh.position.y = 0.55;
+            bodyMesh.castShadow = true;
+            playerGroup.add(bodyMesh);
 
+            const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
+            headMesh.position.y = 0.95;
+            headMesh.castShadow = true;
+            playerGroup.add(headMesh);
+
+            const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 16), new THREE.MeshStandardMaterial({ color: 0xdebe72 }));
+            hatBrim.position.y = 1.05;
+            playerGroup.add(hatBrim);
+
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.12), legMat);
+            leftLeg.position.set(-0.12, 0.15, 0);
+            leftLeg.castShadow = true;
+            playerGroup.add(leftLeg);
+
+            const rightLeg = leftLeg.clone();
+            rightLeg.position.x = 0.12;
+            playerGroup.add(rightLeg);
+
+            playerGroup.position.set(currentPos.c, 0, currentPos.r);
+            scene.add(playerGroup);
+
+            let controls = null;
             if (role === "NAVIGATOR") {
-                camera.position.set(2.5, 9, 8);
-                camera.lookAt(2.5, 0, 2.5);
+                camera.position.set(centerC, mapCols * 1.0, centerR + mapRows * 0.4);
+                
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.target.set(centerC, 0, centerR);
+                
+                controls.enablePan = true;
+                controls.screenSpacePanning = false; 
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.maxPolarAngle = Math.PI / 2.3;
+
+                controls.mouseButtons = {
+                    LEFT: THREE.MOUSE.PAN,       
+                    MIDDLE: THREE.MOUSE.DOLLY,   
+                    RIGHT: THREE.MOUSE.ROTATE    
+                };
+                
+                renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
             } else {
-                camera.position.set(2.5, 5, 7); 
-                camera.lookAt(2.5, 0, 2.5);
+                camera.position.set(currentPos.c, 4, currentPos.r + 3); 
+                camera.lookAt(currentPos.c, 0.5, currentPos.r);
             }
 
             window.addEventListener('keydown', (e) => {
                 if(myRole !== "EXPLORER") return;
 
-                let nextR = currentPos.r;
-                let nextC = currentPos.c;
+                let nextR = targetPos.r;
+                let nextC = targetPos.c;
 
                 if (e.key === 'w' || e.key === 'ArrowUp') nextR--;
                 if (e.key === 's' || e.key === 'ArrowDown') nextR++;
                 if (e.key === 'a' || e.key === 'ArrowLeft') nextC--;
                 if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
 
-                if(nextR !== currentPos.r || nextC !== currentPos.c) {
+                if(nextR !== targetPos.r || nextC !== targetPos.c) {
+                    if (matrix[nextR] && matrix[nextR][nextC] === 3) {
+                        globalRoundCounter = Math.min(5, globalRoundCounter + 1);
+                    }
                     socket.send("MOVE:" + nextR + "," + nextC);
                 }
             });
@@ -150,11 +236,26 @@
             function renderFrame() {
                 requestAnimationFrame(renderFrame);
 
+                currentPos.c += (targetPos.c - currentPos.c) * 0.15;
+                currentPos.r += (targetPos.r - currentPos.r) * 0.15;
+                
+                if(playerGroup) {
+                    playerGroup.position.set(currentPos.c, 0, currentPos.r);
+
+                    const diffC = targetPos.c - currentPos.c;
+                    const diffR = targetPos.r - currentPos.r;
+                    if (Math.abs(diffC) > 0.01 || Math.abs(diffR) > 0.01) {
+                        playerGroup.rotation.y = Math.atan2(diffC, diffR);
+                    }
+                }
+
                 if (role === "NAVIGATOR") {
-                    const time = Date.now() * 0.0003;
-                    camera.position.x = 2.5 + 6 * Math.sin(time);
-                    camera.position.z = 2.5 + 6 * Math.cos(time);
-                    camera.lookAt(2.5, 0, 2.5);
+                    if (controls) controls.update();
+                } else {
+                    camera.position.x += (currentPos.c - camera.position.x) * 0.08;
+                    camera.position.z += ((currentPos.r + 3.5) - camera.position.z) * 0.08;
+                    camera.position.y = 4.5;
+                    camera.lookAt(currentPos.c, 0.6, currentPos.r);
                 }
 
                 renderer.render(scene, camera);
