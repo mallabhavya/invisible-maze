@@ -19,6 +19,8 @@ public class GameRoom {
         loadRoundMap();
     }
 
+    
+
     public void loadRoundMap() {
         this.mazeGrid = MazePresets.getMazeByIndex(this.currentRound);
         // Automatically find where the start position '2' is located inside the new grid

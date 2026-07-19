@@ -76,6 +76,12 @@ public class MazeWebSocketHandler extends TextWebSocketHandler {
                                 // Convert the next round's map layout to JSON string format
                                 String nextGridJson = convertMatrixToJson(room.getMazeGrid());
                                 
+                                // Broadcast stage text string update to fix the counter element on screen
+                                String stageMessage = "STAGE_UPDATE:" + room.getCurrentRound();
+                                for (WebSocketSession activeSession : room.getSessions().values()) {
+                                    activeSession.sendMessage(new TextMessage(stageMessage));
+                                }
+                                
                                 // Broadcast the fresh layout and updated configurations to both clients
                                 for (WebSocketSession activeSession : room.getSessions().values()) {
                                     String playerRole = room.getRole(activeSession.getId()).toString();

@@ -28,7 +28,7 @@
     </div>
 
     <div class="ui-panel" id="lobby">
-        <h1>🌳 Garden Labyrinth 3D 🌳</h1>
+        <h1>🌳 Garden Labyrinth  🌳</h1>
         <button id="btn-create">CREATE GAME</button>
         <div style="margin-top: 25px;">
             <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
@@ -45,14 +45,27 @@
         let targetPos = { r: 0, c: 0 };
         let playerGroup = null; 
         let myRole = "";
-        let globalRoundCounter = 1;
+        let globalRoundCounter = parseInt(sessionStorage.getItem("mazeStage")) || 1;
 
-        socket.onopen = () => statusText.innerText = "Connected to Server. Ready.";
+        socket.onopen = () => {
+            statusText.innerText = "Connected to Server. Ready.";
+            
+            // Reconnect flow if the page was refreshed mid-game
+            const savedCode = sessionStorage.getItem("mazeRoomCode");
+            if (savedCode) {
+                statusText.innerText = "Attempting reconnection to room " + savedCode + "...";
+                socket.send("JOIN:" + savedCode);
+            }
+        };
 
         document.getElementById("btn-create").onclick = () => socket.send("CREATE");
+        
         document.getElementById("btn-join").onclick = () => {
             const code = document.getElementById("input-code").value.trim().toUpperCase();
-            if(code.length === 4) socket.send("JOIN:" + code);
+            if(code.length === 4) {
+                sessionStorage.setItem("mazeRoomCode", code);
+                socket.send("JOIN:" + code);
+            }
         };
 
         socket.onmessage = (event) => {
@@ -63,6 +76,7 @@
                 if (innerStatus.includes("CONGRATULATIONS")) {
                     document.getElementById("lobby").style.display = "block";
                     document.getElementById("hud").style.display = "none";
+                    sessionStorage.clear();
                 }
             } else if(msg.startsWith("START_GAME|")) {
                 const parts = msg.split("|");
@@ -84,6 +98,11 @@
                 const parts = msg.split("|");
                 targetPos.r = parseInt(parts[1]);
                 targetPos.c = parseInt(parts[2]);
+            } else if(msg.startsWith("STAGE_UPDATE:")) {
+                const backendStage = msg.split(":")[1];
+                globalRoundCounter = parseInt(backendStage);
+                sessionStorage.setItem("mazeStage", globalRoundCounter);
+                document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
             }
         };
 
@@ -125,7 +144,6 @@
             const hedgeMatVisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, roughness: 0.8 });
             const hedgeMatInvisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, transparent: true, opacity: 0.02 });
 
-            // CRITICAL RESET: Find start positions dynamically BEFORE drawing entities
             for (let r = 0; r < mapRows; r++) {
                 for (let c = 0; c < mapCols; c++) {
                     if (matrix[r][c] === 2) {
@@ -151,7 +169,6 @@
                         start.position.set(c, 0.01, r);
                         scene.add(start);
                     } else if (cell === 3) {
-                        // Renders a high-contrast golden goal pad perfectly visible to all roles
                         const end = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.9), new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.2 }));
                         end.position.set(c, 0.05, r);
                         scene.add(end);
@@ -159,7 +176,6 @@
                 }
             }
 
-            // STYLIZED HUMANOID CHARACTER GROUP
             playerGroup = new THREE.Group();
             
             const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), new THREE.MeshStandardMaterial({ color: 0xd35400 }));
@@ -226,9 +242,6 @@
                 if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
 
                 if(nextR !== targetPos.r || nextC !== targetPos.c) {
-                    if (matrix[nextR] && matrix[nextR][nextC] === 3) {
-                        globalRoundCounter = Math.min(5, globalRoundCounter + 1);
-                    }
                     socket.send("MOVE:" + nextR + "," + nextC);
                 }
             });
