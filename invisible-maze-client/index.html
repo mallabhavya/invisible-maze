@@ -2,6 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invisible Maze 3D: Garden Labyrinth</title>
+    
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <!-- Simple Top HUD -->
+    <div id="hud">
+        ROLE: <span id="hud-role"></span> | 
+        STAGE: <span id="hud-stage">1/5</span>
+    </div>
+
+    <!-- Navigator Camera Controls Indicator -->
+    <div id="nav-controls-hint">
+        <b>NAVIGATOR CAMERA CONTROLS:</b><br>
+        • Left-Click Drag: Pan / Move Map (Up, Down, Left, Right)<br>
+        • Right-Click Drag: Rotate View<br>
+        • Scroll Wheel: Zoom In / Out
+    </div>
+
+    <!-- Dark Green Lobby -->
+    <div class="ui-panel" id="lobby">
+        <h1>🌳 Garden Labyrinth 🌳</h1>
+        <button id="btn-create">CREATE GAME</button>
+        <div class="join-box">
+            <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
+            <button id="btn-join">JOIN GAME</button>
+        </div>
+        <p id="status">Connecting to server world infrastructure...</p>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <title>Invisible Maze 3D: Garden Edition</title>
     <style>
         * {
@@ -283,4 +334,4 @@
         }
     </script>
 </body>
-</html>
+</html> -->
