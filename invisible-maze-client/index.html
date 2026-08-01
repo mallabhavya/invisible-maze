@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invisible Maze 3D: Garden Labyrinth</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 
     <!-- Three.js & Controls -->
@@ -12,11 +15,12 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
+    <div class="animated-bg"></div>
 
     <!-- Simple Top HUD -->
     <div id="hud">
         ROLE: <span id="hud-role"></span> | 
-        STAGE: <span id="hud-stage">1/5</span>
+        STAGE: <span id="hud-stage">1/10</span>
     </div>
 
     <!-- Navigator Camera Controls Indicator -->

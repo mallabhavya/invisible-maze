@@ -17,7 +17,7 @@ socket.onopen = () => {
     const savedCode = sessionStorage.getItem("mazeRoomCode");
     if (savedCode) {
         statusText.innerText = "Attempting reconnection to room " + savedCode + "...";
-        socket.send("JOIN:" + savedCode);
+        socket.send("JOIN|" + savedCode);
     }
 };
 
@@ -27,14 +27,24 @@ document.getElementById("btn-join").onclick = () => {
     const code = document.getElementById("input-code").value.trim().toUpperCase();
     if (code.length === 4) {
         sessionStorage.setItem("mazeRoomCode", code);
-        socket.send("JOIN:" + code);
+        socket.send("JOIN|" + code);
     }
 };
 
 socket.onmessage = (event) => {
     const msg = event.data;
 
-    if (msg.startsWith("LOBBY_STATUS:")) {
+    if (msg.startsWith("ROOM_CREATED|")) {
+        const code = msg.split("|")[1];
+        sessionStorage.setItem("mazeRoomCode", code);
+        statusText.innerText = "Room Created: " + code + ". Waiting for Explorer...";
+    } else if (msg.startsWith("ROOM_JOINED|")) {
+        const code = msg.split("|")[1];
+        statusText.innerText = "Joined Room: " + code + ". Waiting to start...";
+    } else if (msg.startsWith("ERROR|")) {
+        const error = msg.split("|")[1];
+        statusText.innerText = "Error: " + error;
+    } else if (msg.startsWith("LOBBY_STATUS:")) {
         const innerStatus = msg.replace("LOBBY_STATUS:", "");
         statusText.innerText = innerStatus;
         if (innerStatus.includes("CONGRATULATIONS")) {
@@ -51,7 +61,7 @@ socket.onmessage = (event) => {
         document.getElementById("lobby").style.display = "none";
         document.getElementById("hud").style.display = "block";
         document.getElementById("hud-role").innerText = myRole;
-        document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
+        document.getElementById("hud-stage").innerText = globalRoundCounter + "/10";
 
         if (myRole === "NAVIGATOR") {
             document.getElementById("nav-controls-hint").style.display = "block";
@@ -71,7 +81,7 @@ socket.onmessage = (event) => {
         const backendStage = msg.split(":")[1];
         globalRoundCounter = parseInt(backendStage);
         sessionStorage.setItem("mazeStage", globalRoundCounter);
-        document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
+        document.getElementById("hud-stage").innerText = globalRoundCounter + "/10";
     }
 };
 
@@ -361,7 +371,7 @@ function build3DWorld(role, matrix) {
         if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
 
         if (nextR !== targetPos.r || nextC !== targetPos.c) {
-            socket.send("MOVE:" + nextR + "," + nextC);
+            socket.send("MOVE|" + nextR + "|" + nextC);
         }
     });
 
