@@ -100,8 +100,8 @@ Open a separate Incognito Tab pointing to the same file to run as Player 2.
 [x] Immersive third-person camera perspective with Fog-of-War overlay for the Explorer
 [x] Dynamic rotating overhead display configuration for the Navigator
 [x] Low-poly Humanoid character avatar assembly (replaces temporary sphere markers)
-[ ] Upgrade to high-density structural maze layouts (16x16 Matrix maps with 10-15 turns)
-[ ] Navigator map selection preview menu
+[x] Upgrade to high-density structural maze layouts (16x16 Matrix maps with 10-15 turns)
+[x] randomly generated maze by the depth search alogrithm
 [ ] Round timer mechanics and trap modules
 [ ] Win / Lose state checking loop
 [ ] Polished frontend UI lobby redesign
