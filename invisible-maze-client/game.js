@@ -11,6 +11,10 @@ let myRole = "";
 let globalRoundCounter = parseInt(sessionStorage.getItem("mazeStage")) || 1;
 let walkCycle = 0;
 
+let animationFrameId = null;
+let keydownListener = null;
+let resizeListener = null;
+
 socket.onopen = () => {
     statusText.innerText = "Connected to Server. Ready.";
     
@@ -21,9 +25,27 @@ socket.onopen = () => {
     }
 };
 
-document.getElementById("btn-create").onclick = () => socket.send("CREATE");
+socket.onclose = () => {
+    statusText.innerText = "Disconnected from server. Please refresh or check if server is running.";
+};
+
+socket.onerror = (error) => {
+    statusText.innerText = "Connection error. Is the server running on port 8085?";
+};
+
+document.getElementById("btn-create").onclick = () => {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send("CREATE");
+    } else {
+        statusText.innerText = "Error: Not connected to server.";
+    }
+};
 
 document.getElementById("btn-join").onclick = () => {
+    if (socket.readyState !== WebSocket.OPEN) {
+        statusText.innerText = "Error: Not connected to server.";
+        return;
+    }
     const code = document.getElementById("input-code").value.trim().toUpperCase();
     if (code.length === 4) {
         sessionStorage.setItem("mazeRoomCode", code);
@@ -70,6 +92,19 @@ socket.onmessage = (event) => {
         const existingCanvas = document.querySelector('canvas');
         if (existingCanvas) {
             existingCanvas.remove();
+        }
+
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        if (keydownListener !== null) {
+            window.removeEventListener('keydown', keydownListener);
+            keydownListener = null;
+        }
+        if (resizeListener !== null) {
+            window.removeEventListener('resize', resizeListener);
+            resizeListener = null;
         }
 
         build3DWorld(myRole, matrix);
@@ -359,7 +394,7 @@ function build3DWorld(role, matrix) {
     }
 
     // Input Movement
-    window.addEventListener('keydown', (e) => {
+    keydownListener = (e) => {
         if (myRole !== "EXPLORER") return;
 
         let nextR = targetPos.r;
@@ -370,14 +405,15 @@ function build3DWorld(role, matrix) {
         if (e.key === 'a' || e.key === 'ArrowLeft') nextC--;
         if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
 
-        if (nextR !== targetPos.r || nextC !== targetPos.c) {
+        if (socket.readyState === WebSocket.OPEN && (nextR !== targetPos.r || nextC !== targetPos.c)) {
             socket.send("MOVE|" + nextR + "|" + nextC);
         }
-    });
+    };
+    window.addEventListener('keydown', keydownListener);
 
     // Render & Animation Loop
     function renderFrame() {
-        requestAnimationFrame(renderFrame);
+        animationFrameId = requestAnimationFrame(renderFrame);
 
         const diffC = targetPos.c - currentPos.c;
         const diffR = targetPos.r - currentPos.r;
@@ -419,9 +455,10 @@ function build3DWorld(role, matrix) {
     }
     renderFrame();
 
-    window.addEventListener('resize', () => {
+    resizeListener = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    };
+    window.addEventListener('resize', resizeListener);
 }
