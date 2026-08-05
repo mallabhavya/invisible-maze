@@ -51,6 +51,14 @@ public class GameRoom {
         return players.get(session);
     }
 
+    public PlayerRole getAvailableRole() {
+        boolean hasNavigator = false;
+        for (PlayerRole role : players.values()) {
+            if (role == PlayerRole.NAVIGATOR) hasNavigator = true;
+        }
+        return hasNavigator ? PlayerRole.EXPLORER : PlayerRole.NAVIGATOR;
+    }
+
     public void setExplorerPosition(int row, int col) {
         this.explorerRow = row;
         this.explorerCol = col;

@@ -29,7 +29,8 @@ public class RoomManager {
     public GameRoom joinRoom(WebSocketSession session, String roomCode) {
         GameRoom room = activeRooms.get(roomCode);
         if (room != null && !room.isFull()) {
-            room.addPlayer(session, PlayerRole.EXPLORER);
+            PlayerRole role = room.getAvailableRole();
+            room.addPlayer(session, role);
             sessionRoomMap.put(session, room);
             return room;
         }

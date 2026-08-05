@@ -1,184 +1,363 @@
+/* ============================================================
+   INVISIBLE MAZE - GOLD & DARK FOLIAGE STYLING
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap');
+
 * {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
+    user-select: none;
 }
 
-body, html { 
-    margin: 0; 
-    padding: 0; 
-    width: 100%; 
-    height: 100%; 
-    overflow: hidden; 
-    font-family: 'Outfit', sans-serif; 
-    color: #fff; 
-    background-color: #0b1c12; /* Fallback */
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Outfit', sans-serif;
+    background: #040907;
+    color: #e2ece9;
 }
 
-/* Dynamic Animated Gradient Background */
+/* --- Animated Dark Forest Background --- */
 .animated-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    background: radial-gradient(circle at 50% 30%, #0d2218 0%, #040907 80%);
+}
+
+.foliage-overlay {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -1;
-    background: linear-gradient(135deg, #0b1c12, #143522, #0d2816, #0b1c12);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+    background-size: 32px 32px;
+    opacity: 0.4;
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+.vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.85) 100%);
 }
 
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
+.glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.18;
 }
 
-/* Glassmorphism Lobby Interface */
-.ui-panel { 
-    position: absolute; 
-    z-index: 10; 
-    background: rgba(15, 38, 23, 0.45);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    padding: 40px; 
-    border-radius: 16px; 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    text-align: center; 
-    top: 50%; 
-    left: 50%; 
-    transform: translate(-50%, -50%); 
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    width: 400px;
-    max-width: 90vw;
+.glow1 { background: #4ae387; top: -10%; left: -10%; animation: float 18s ease-in-out infinite alternate; }
+.glow2 { background: #d4af37; bottom: -10%; right: -10%; animation: float 22s ease-in-out infinite alternate-reverse; }
+
+@keyframes float {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(80px, 50px); }
 }
 
-.ui-panel h1 {
-    margin-top: 0;
-    font-size: 2.2rem;
+/* --- Glassmorphic Containers --- */
+.glass-card {
+    background: rgba(10, 20, 15, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(82, 120, 95, 0.25);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+
+/* --- Main Lobby Panel --- */
+.ui-panel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 440px;
+    max-width: 92vw;
+    padding: 40px 36px;
+    text-align: center;
+    z-index: 10;
+}
+
+.main-title {
+    font-family: 'Cinzel', serif;
+    font-size: 3.2rem;
     font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.5px;
-    margin-bottom: 30px;
-    text-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
+    letter-spacing: 4px;
+    line-height: 0.95;
+    background: linear-gradient(180deg, #ffffff 30%, #c5d8cf 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
 
-.join-box {
-    margin-top: 30px;
+.main-title span {
+    display: block;
+    font-size: 4rem;
+    letter-spacing: 8px;
+    background: linear-gradient(180deg, #e6c875 0%, #997a2d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.tagline {
+    font-size: 0.9rem;
+    color: #8da499;
+    margin: 14px 0 28px;
+    letter-spacing: 1px;
+}
+
+/* --- Input Fields --- */
+.input-group {
+    text-align: left;
+    margin-bottom: 18px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.68rem;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 2.5px;
+    color: #7b9689;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    font-size: 0.9rem;
+    opacity: 0.6;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 14px 14px 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-wrapper input:focus {
+    border-color: #4ae387;
+    box-shadow: 0 0 15px rgba(74, 227, 135, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#input-code {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* --- Buttons --- */
+.button-group {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: 24px;
 }
 
-button { 
-    padding: 14px 24px; 
-    font-family: 'Outfit', sans-serif;
-    font-size: 16px; 
-    font-weight: 600; 
-    background: linear-gradient(135deg, #2ecc71, #27ae60); 
-    color: #fff; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
+button {
     width: 100%;
-    margin: 0;
-    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); 
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-button:hover { 
+.btn-primary {
+    background: linear-gradient(180deg, #2ebf6b 0%, #1a7a42 100%);
+    color: #ffffff;
+    border: 1px solid #4ae387;
+    box-shadow: 0 8px 25px rgba(46, 191, 107, 0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+.btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4); 
-    background: linear-gradient(135deg, #35db7a, #2ecc71); 
+    box-shadow: 0 12px 30px rgba(46, 191, 107, 0.45);
+    filter: brightness(1.1);
 }
 
-button:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
+.btn-secondary {
+    background: rgba(20, 35, 28, 0.6);
+    color: #c0d4cb;
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-input { 
-    padding: 14px; 
-    font-family: 'Outfit', sans-serif;
-    font-size: 16px; 
-    font-weight: 600;
-    background: rgba(0, 0, 0, 0.25); 
-    border: 1px solid rgba(255, 255, 255, 0.15); 
-    color: #fff; 
-    text-align: center; 
-    border-radius: 8px; 
-    text-transform: uppercase; 
-    transition: all 0.3s ease;
-    width: 100%;
+.btn-secondary:hover {
+    background: rgba(30, 55, 42, 0.8);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
 }
 
-input:focus {
-    outline: none;
-    border-color: #2ecc71;
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
+/* --- Status Card --- */
+.status-card {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    color: #92ab9f;
 }
 
-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ae387;
+    box-shadow: 0 0 10px #4ae387;
 }
 
-#status {
-    color: rgba(255, 255, 255, 0.7); 
-    margin-top: 25px;
-    font-size: 0.9rem;
-    font-weight: 300;
+.footer-note {
+    margin-top: 20px;
+    font-size: 0.75rem;
+    color: #5d7569;
+    letter-spacing: 1px;
 }
 
-/* Glassmorphism HUD */
-#hud { 
-    position: absolute; 
-    top: 24px; 
-    left: 24px; 
-    z-index: 5; 
-    background: rgba(15, 38, 23, 0.35); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 14px 24px; 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    border-radius: 12px; 
-    display: none; 
-    font-size: 1.05rem;
-    font-weight: 400;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+/* --- HUD Overlays --- */
+#hud {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    display: none;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 100;
 }
 
-#hud-role { color: #2ecc71; font-weight: 800; }
-#hud-stage { color: #ffcc00; font-weight: 800; }
+.hud-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+    pointer-events: auto;
+}
 
-/* Navigator Camera Control Guidelines Overlay */
+.hud-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(74, 227, 135, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(74, 227, 135, 0.3);
+}
+
+.hud-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.hud-sub {
+    font-size: 0.75rem;
+    color: #7b9689;
+}
+
+.hud-timer-card {
+    display: flex;
+    gap: 18px;
+    text-align: center;
+}
+
+.hud-label {
+    display: block;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: #7b9689;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.hud-divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* --- Navigator Hint Card --- */
 #nav-controls-hint {
     position: absolute;
     bottom: 24px;
-    right: 24px;
-    z-index: 5;
-    background: rgba(15, 38, 23, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 16px 20px;
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 300;
-    line-height: 1.6;
+    left: 50%;
+    transform: translateX(-50%);
     display: none;
-    color: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    gap: 20px;
+    padding: 10px 24px;
+    z-index: 100;
 }
 
-#nav-controls-hint b {
-    color: #fff;
-    font-weight: 600;
-    margin-bottom: 8px;
-    display: inline-block;
+.hint-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+.hint-item strong { display: block; color: #fff; }
+.hint-item small { color: #7b9689; }
+
+/* --- WASD Keyboard Overlay --- */
+.wasd-overlay {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 100;
+}
+
+.wasd-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.key {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(10, 20, 15, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif;
+    color: #c5d8cf;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
 }

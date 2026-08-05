@@ -1,7 +1,10 @@
 // --- Socket & Global State ---
-const socket = new WebSocket("ws://localhost:8085/game");
+const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+// IMPORTANT: Replace the placeholder below with your actual Render URL after deploying!
+const wsHost = isLocal ? "localhost:8085" : "https://invisible-maze-p063.onrender.com";
+const socket = new WebSocket(`${wsProtocol}${wsHost}/game`);
 const statusText = document.getElementById("status");
-
 let currentPos = { r: 0, c: 0 };
 let targetPos = { r: 0, c: 0 };
 let playerGroup = null; 
@@ -10,6 +13,9 @@ let leftArm = null, rightArm = null;
 let myRole = "";
 let globalRoundCounter = parseInt(sessionStorage.getItem("mazeStage")) || 1;
 let walkCycle = 0;
+let animationFrameId = null;
+let keydownListener = null;
+let resizeListener = null;
 
 socket.onopen = () => {
     statusText.innerText = "Connected to Server. Ready.";
@@ -21,9 +27,27 @@ socket.onopen = () => {
     }
 };
 
-document.getElementById("btn-create").onclick = () => socket.send("CREATE");
+socket.onclose = () => {
+    statusText.innerText = "Disconnected from server. Please refresh.";
+};
+
+socket.onerror = (error) => {
+    statusText.innerText = "Connection error. Is the server running on port 8085?";
+};
+
+document.getElementById("btn-create").onclick = () => {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send("CREATE");
+    } else {
+        statusText.innerText = "Error: Not connected to server.";
+    }
+};
 
 document.getElementById("btn-join").onclick = () => {
+    if (socket.readyState !== WebSocket.OPEN) {
+        statusText.innerText = "Error: Not connected to server.";
+        return;
+    }
     const code = document.getElementById("input-code").value.trim().toUpperCase();
     if (code.length === 4) {
         sessionStorage.setItem("mazeRoomCode", code);
@@ -33,7 +57,6 @@ document.getElementById("btn-join").onclick = () => {
 
 socket.onmessage = (event) => {
     const msg = event.data;
-
     if (msg.startsWith("ROOM_CREATED|")) {
         const code = msg.split("|")[1];
         sessionStorage.setItem("mazeRoomCode", code);
@@ -57,21 +80,33 @@ socket.onmessage = (event) => {
         const parts = msg.split("|");
         myRole = parts[1];
         const matrix = JSON.parse(parts[2]);
-
         document.getElementById("lobby").style.display = "none";
-        document.getElementById("hud").style.display = "block";
+        document.getElementById("hud").style.display = "flex";
         document.getElementById("hud-role").innerText = myRole;
-        document.getElementById("hud-stage").innerText = globalRoundCounter + "/10";
-
+        document.getElementById("hud-stage").innerText = "Stage " + globalRoundCounter + " / 10";
+        
         if (myRole === "NAVIGATOR") {
-            document.getElementById("nav-controls-hint").style.display = "block";
+            document.getElementById("nav-controls-hint").style.display = "flex";
+        } else {
+            document.getElementById("nav-controls-hint").style.display = "none";
         }
 
         const existingCanvas = document.querySelector('canvas');
         if (existingCanvas) {
             existingCanvas.remove();
         }
-
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        if (keydownListener !== null) {
+            window.removeEventListener('keydown', keydownListener);
+            keydownListener = null;
+        }
+        if (resizeListener !== null) {
+            window.removeEventListener('resize', resizeListener);
+            resizeListener = null;
+        }
         build3DWorld(myRole, matrix);
     } else if (msg.startsWith("PLAYER_MOVED|")) {
         const parts = msg.split("|");
@@ -81,7 +116,7 @@ socket.onmessage = (event) => {
         const backendStage = msg.split(":")[1];
         globalRoundCounter = parseInt(backendStage);
         sessionStorage.setItem("mazeStage", globalRoundCounter);
-        document.getElementById("hud-stage").innerText = globalRoundCounter + "/10";
+        document.getElementById("hud-stage").innerText = "Stage " + globalRoundCounter + " / 10";
     }
 };
 
@@ -93,7 +128,6 @@ function createPathTexture() {
     
     ctx.fillStyle = '#324222';
     ctx.fillRect(0, 0, 512, 512);
-
     ctx.strokeStyle = '#212d16';
     ctx.lineWidth = 4;
     const tileSize = 64;
@@ -118,7 +152,6 @@ function createLeafTexture() {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#16330f';
     ctx.fillRect(0, 0, 256, 256);
-
     for (let i = 0; i < 3500; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
@@ -135,90 +168,72 @@ function createLeafTexture() {
 // --- Detailed Humanoid Character Builder ---
 function createHumanoidCharacter() {
     const group = new THREE.Group();
-
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.6 });
     const shirtMat = new THREE.MeshStandardMaterial({ color: 0x2980b9, roughness: 0.5 });
     const pantsMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.7 });
     const bootMat = new THREE.MeshStandardMaterial({ color: 0x1a0f07, roughness: 0.4 });
     const hairMat = new THREE.MeshStandardMaterial({ color: 0x4a2e12, roughness: 0.8 });
-
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.45, 0.22), shirtMat);
     torso.position.y = 0.55;
     torso.castShadow = true;
     group.add(torso);
-
     const belt = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.06, 0.24), bootMat);
     belt.position.y = 0.34;
     group.add(belt);
-
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), skinMat);
     head.position.y = 0.88;
     head.castShadow = true;
     group.add(head);
-
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
     hair.position.y = 0.90;
     group.add(hair);
-
     const createLeg = (xOffset) => {
         const legGroup = new THREE.Group();
         legGroup.position.set(xOffset, 0.32, 0);
-
         const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 0.12), pantsMat);
         legMesh.position.y = -0.14;
         legMesh.castShadow = true;
         legGroup.add(legMesh);
-
         const boot = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.18), bootMat);
         boot.position.set(0, -0.24, 0.03);
         boot.castShadow = true;
         legGroup.add(boot);
-
         return legGroup;
     };
-
     leftLeg = createLeg(-0.11);
     rightLeg = createLeg(0.11);
     group.add(leftLeg);
     group.add(rightLeg);
-
     const createArm = (xOffset) => {
         const armGroup = new THREE.Group();
         armGroup.position.set(xOffset, 0.72, 0);
-
         const sleeve = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.30, 0.10), shirtMat);
         sleeve.position.y = -0.15;
         sleeve.castShadow = true;
         armGroup.add(sleeve);
-
         const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), skinMat);
         hand.position.y = -0.32;
         armGroup.add(hand);
-
         return armGroup;
     };
-
     leftArm = createArm(-0.24);
     rightArm = createArm(0.24);
     group.add(leftArm);
     group.add(rightArm);
-
     return group;
 }
 
 // --- World Builder ---
 function build3DWorld(role, matrix) {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.FogExp2(0x87CEEB, 0.012);
-
+    scene.background = new THREE.Color(0x040907);
+    scene.fog = new THREE.FogExp2(0x040907, 0.025);
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
-
     const mapRows = matrix.length;
     const mapCols = matrix[0].length;
     const centerR = mapRows / 2 - 0.5;
@@ -227,7 +242,6 @@ function build3DWorld(role, matrix) {
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xdff0ff, 0.65);
     scene.add(ambientLight);
-
     const sunLight = new THREE.DirectionalLight(0xfffaed, 1.25);
     sunLight.position.set(centerC - 10, 24, centerR - 10);
     sunLight.castShadow = true;
@@ -251,7 +265,7 @@ function build3DWorld(role, matrix) {
     const leafTex = createLeafTexture();
     const hedgeMatVisible = new THREE.MeshStandardMaterial({ map: leafTex, roughness: 0.85 });
     const hedgeMatInvisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, transparent: true, opacity: 0.02 });
-
+    
     for (let r = 0; r < mapRows; r++) {
         for (let c = 0; c < mapCols; c++) {
             if (matrix[r][c] === 2) {
@@ -261,17 +275,15 @@ function build3DWorld(role, matrix) {
         }
     }
 
-    // Build Detailed Volumetric Realistic Hedges
+    // Build Volumetric Hedges
     for (let r = 0; r < mapRows; r++) {
         for (let c = 0; c < mapCols; c++) {
             const cell = matrix[r][c];
-
             if (cell === 1) {
                 const isNav = (role === "NAVIGATOR");
                 const mat = isNav ? hedgeMatVisible : hedgeMatInvisible;
                 const hedgeGroup = new THREE.Group();
-
-                // Core Main Hedge Pillar
+                
                 const height = 2.2 + (Math.random() * 0.15 - 0.07);
                 const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(0.96, height, 0.96), mat);
                 wallMesh.position.set(c, height / 2, r);
@@ -279,17 +291,14 @@ function build3DWorld(role, matrix) {
                 wallMesh.receiveShadow = isNav;
                 hedgeGroup.add(wallMesh);
 
-                // Volumetric Foliage Bump Caps for organic trim look
                 if (isNav) {
                     const topCap = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.2, 1.04), mat);
                     topCap.position.set(c, height + 0.05, r);
                     hedgeGroup.add(topCap);
-
                     const midBuldge = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.8, 1.02), mat);
                     midBuldge.position.set(c, height / 2, r);
                     hedgeGroup.add(midBuldge);
                 }
-
                 scene.add(hedgeGroup);
             } else if (cell === 2) {
                 const pad = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.9), new THREE.MeshStandardMaterial({ color: 0x7f8c8d, roughness: 0.5 }));
@@ -298,7 +307,6 @@ function build3DWorld(role, matrix) {
                 scene.add(pad);
             } else if (cell === 3) {
                 const fountainGroup = new THREE.Group();
-
                 const pedestal = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.45, 0.5, 0.3, 16),
                     new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.4 })
@@ -306,18 +314,15 @@ function build3DWorld(role, matrix) {
                 pedestal.position.set(c, 0.15, r);
                 pedestal.castShadow = true;
                 fountainGroup.add(pedestal);
-
                 const water = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.4, 0.4, 0.05, 16),
                     new THREE.MeshStandardMaterial({ color: 0x00bfff, roughness: 0.1, metalness: 0.9 })
                 );
                 water.position.set(c, 0.3, r);
                 fountainGroup.add(water);
-
                 const lightBeam = new THREE.PointLight(0x00ffff, 1.5, 3);
                 lightBeam.position.set(c, 0.8, r);
                 fountainGroup.add(lightBeam);
-
                 scene.add(fountainGroup);
             }
         }
@@ -336,7 +341,6 @@ function build3DWorld(role, matrix) {
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.target.set(centerC, 0, centerR);
         
-        // Enabled Panning (Up/Down/Left/Right), Zooming, and Orbiting
         controls.enablePan = true;
         controls.screenSpacePanning = true; 
         controls.enableDamping = true;
@@ -344,12 +348,10 @@ function build3DWorld(role, matrix) {
         controls.maxPolarAngle = Math.PI / 2.2;
         controls.minDistance = 3;
         controls.maxDistance = mapCols * 2.5;
-
-        // Custom Mouse Setup for Easy Panning
         controls.mouseButtons = {
-            LEFT: THREE.MOUSE.PAN,      // Left-Click Drag: Move Up, Down, Left, Right
-            MIDDLE: THREE.MOUSE.DOLLY,  // Middle Scroll: Zoom
-            RIGHT: THREE.MOUSE.ROTATE   // Right-Click Drag: Rotate camera perspective
+            LEFT: THREE.MOUSE.PAN,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE
         };
         
         renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -359,39 +361,33 @@ function build3DWorld(role, matrix) {
     }
 
     // Input Movement
-    window.addEventListener('keydown', (e) => {
+    keydownListener = (e) => {
         if (myRole !== "EXPLORER") return;
-
         let nextR = targetPos.r;
         let nextC = targetPos.c;
-
         if (e.key === 'w' || e.key === 'ArrowUp') nextR--;
         if (e.key === 's' || e.key === 'ArrowDown') nextR++;
         if (e.key === 'a' || e.key === 'ArrowLeft') nextC--;
         if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
-
-        if (nextR !== targetPos.r || nextC !== targetPos.c) {
+        if (socket.readyState === WebSocket.OPEN && (nextR !== targetPos.r || nextC !== targetPos.c)) {
             socket.send("MOVE|" + nextR + "|" + nextC);
         }
-    });
+    };
+    window.addEventListener('keydown', keydownListener);
 
     // Render & Animation Loop
     function renderFrame() {
-        requestAnimationFrame(renderFrame);
-
+        animationFrameId = requestAnimationFrame(renderFrame);
         const diffC = targetPos.c - currentPos.c;
         const diffR = targetPos.r - currentPos.r;
         const isMoving = Math.abs(diffC) > 0.01 || Math.abs(diffR) > 0.01;
-
         currentPos.c += diffC * 0.15;
         currentPos.r += diffR * 0.15;
         
         if (playerGroup) {
             playerGroup.position.set(currentPos.c, 0, currentPos.r);
-
             if (isMoving) {
                 playerGroup.rotation.y = Math.atan2(diffC, diffR);
-
                 walkCycle += 0.25;
                 const swing = Math.sin(walkCycle) * 0.6;
                 if (leftLeg) leftLeg.rotation.x = swing;
@@ -405,7 +401,6 @@ function build3DWorld(role, matrix) {
                 if (rightArm) rightArm.rotation.x = 0;
             }
         }
-
         if (role === "NAVIGATOR") {
             if (controls) controls.update();
         } else {
@@ -414,14 +409,14 @@ function build3DWorld(role, matrix) {
             camera.position.y = 4.5;
             camera.lookAt(currentPos.c, 0.6, currentPos.r);
         }
-
         renderer.render(scene, camera);
     }
     renderFrame();
 
-    window.addEventListener('resize', () => {
+    resizeListener = () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    };
+    window.addEventListener('resize', resizeListener);
 }

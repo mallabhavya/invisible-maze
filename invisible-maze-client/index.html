@@ -3,339 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invisible Maze 3D: Garden Labyrinth</title>
-    
+    <title>Invisible Maze</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 
-    <!-- Three.js & Controls -->
+    <!-- ThreeJS & OrbitControls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <div class="animated-bg"></div>
 
-    <!-- Simple Top HUD -->
-    <div id="hud">
-        ROLE: <span id="hud-role"></span> | 
-        STAGE: <span id="hud-stage">1/10</span>
+    <!-- Dynamic Dark Foliage Background -->
+    <div class="animated-bg">
+        <div class="foliage-overlay"></div>
+        <div class="glow glow1"></div>
+        <div class="glow glow2"></div>
+        <div class="vignette"></div>
     </div>
 
-    <!-- Navigator Camera Controls Indicator -->
-    <div id="nav-controls-hint">
-        <b>NAVIGATOR CAMERA CONTROLS:</b><br>
-        • Left-Click Drag: Pan / Move Map (Up, Down, Left, Right)<br>
-        • Right-Click Drag: Rotate View<br>
-        • Scroll Wheel: Zoom In / Out
-    </div>
+    <!-- UI CONTAINER -->
+    <main id="ui-container">
 
-    <!-- Dark Green Lobby -->
-    <div class="ui-panel" id="lobby">
-        <h1>🌳 Garden Labyrinth 🌳</h1>
-        <button id="btn-create">CREATE GAME</button>
-        <div class="join-box">
-            <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
-            <button id="btn-join">JOIN GAME</button>
+        <!-- 1. MAIN LOBBY -->
+        <section id="lobby" class="ui-panel glass-card">
+            <h1 class="main-title">
+                INVISIBLE
+                <span>MAZE</span>
+            </h1>
+            <p class="tagline">🌿 Escape what cannot be seen. 🌿</p>
+
+            <div class="input-group">
+                <label for="input-name">YOUR NAME</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="input-name" placeholder="Enter your name..." autocomplete="off">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="input-code">ROOM CODE </label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔑</span>
+                    <input type="text" id="input-code" maxlength="4" placeholder="Enter room code..." autocomplete="off">
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-create" class="btn-primary">
+                    <span class="btn-icon">🍃</span> HOST A MAZE
+                </button>
+                <button id="btn-join" class="btn-secondary">
+                    <span class="btn-icon">🔑</span> ENTER MAZE
+                </button>
+            </div>
+
+            <div class="status-card">
+                <div class="status-dot"></div>
+                <p id="status">Connecting to server...</p>
+            </div>
+
+            <p class="footer-note">Guide your explorer. Escape together. 🌿</p>
+        </section>
+
+        <!-- HUD (In-Game Overlay Header) -->
+        <div id="hud">
+            <div class="hud-card glass-card">
+                <div class="hud-avatar">👤</div>
+                <div>
+                    <div id="hud-role" class="hud-value">ROLE</div>
+                    <div id="hud-stage" class="hud-sub">Stage 1 / 10</div>
+                </div>
+            </div>
         </div>
-        <p id="status">Connecting to server world infrastructure...</p>
-    </div>
+
+        <!-- Navigator Camera Controls Hint -->
+        <div id="nav-controls-hint" class="glass-card">
+            <div class="hint-item">
+                <span class="hint-icon">🖱️</span>
+                <div><strong>Left Drag</strong><small>Pan</small></div>
+            </div>
+            <div class="hint-item">
+                <span class="hint-icon">🔄</span>
+                <div><strong>Right Drag</strong><small>Rotate</small></div>
+            </div>
+            <div class="hint-item">
+                <span class="hint-icon">🔍</span>
+                <div><strong>Scroll</strong><small>Zoom</small></div>
+            </div>
+        </div>
+
+    </main>
 
     <script src="game.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Invisible Maze 3D: Garden Edition</title>
-    <style>
-        * {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #87CEEB; font-family: monospace; color: #fff; }
-        .ui-panel { position: absolute; z-index: 10; background: rgba(10, 30, 10, 0.9); padding: 25px; border-radius: 8px; border: 2px solid #2ecc71; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
-        button { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #2ecc71; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        button:hover { background: #27ae60; }
-        input { padding: 12px; font-size: 16px; background: #1a3322; border: 1px solid #2ecc71; color: #fff; text-align: center; border-radius: 4px; text-transform: uppercase; }
-        #hud { position: absolute; top: 20px; left: 20px; z-index: 5; background: rgba(10,30,10,0.8); padding: 15px; border: 1px solid #2ecc71; border-radius: 5px; display: none; }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-</head>
-<body>
-
-    <div id="hud">
-        ROLE: <span id="hud-role" style="color: #2ecc71; font-weight: bold;"></span> | 
-        STAGE: <span id="hud-stage" style="color: #ffcc00; font-weight: bold;">1/5</span>
-    </div>
-
-    <div class="ui-panel" id="lobby">
-        <h1>🌳 Garden Labyrinth  🌳</h1>
-        <button id="btn-create">CREATE GAME</button>
-        <div style="margin-top: 25px;">
-            <input type="text" id="input-code" placeholder="ROOM CODE" maxlength="4">
-            <button id="btn-join">JOIN GAME</button>
-        </div>
-        <p id="status" style="color: #bbb; margin-top: 15px;">Connecting to server world infrastructure...</p>
-    </div>
-
-    <script>
-        const socket = new WebSocket("ws://localhost:8085/game");
-        const statusText = document.getElementById("status");
-
-        let currentPos = { r: 0, c: 0 };
-        let targetPos = { r: 0, c: 0 };
-        let playerGroup = null; 
-        let myRole = "";
-        let globalRoundCounter = parseInt(sessionStorage.getItem("mazeStage")) || 1;
-
-        socket.onopen = () => {
-            statusText.innerText = "Connected to Server. Ready.";
-            
-            // Reconnect flow if the page was refreshed mid-game
-            const savedCode = sessionStorage.getItem("mazeRoomCode");
-            if (savedCode) {
-                statusText.innerText = "Attempting reconnection to room " + savedCode + "...";
-                socket.send("JOIN:" + savedCode);
-            }
-        };
-
-        document.getElementById("btn-create").onclick = () => socket.send("CREATE");
-        
-        document.getElementById("btn-join").onclick = () => {
-            const code = document.getElementById("input-code").value.trim().toUpperCase();
-            if(code.length === 4) {
-                sessionStorage.setItem("mazeRoomCode", code);
-                socket.send("JOIN:" + code);
-            }
-        };
-
-        socket.onmessage = (event) => {
-            const msg = event.data;
-            if(msg.startsWith("LOBBY_STATUS:")) {
-                const innerStatus = msg.replace("LOBBY_STATUS:", "");
-                statusText.innerText = innerStatus;
-                if (innerStatus.includes("CONGRATULATIONS")) {
-                    document.getElementById("lobby").style.display = "block";
-                    document.getElementById("hud").style.display = "none";
-                    sessionStorage.clear();
-                }
-            } else if(msg.startsWith("START_GAME|")) {
-                const parts = msg.split("|");
-                myRole = parts[1];
-                const matrix = JSON.parse(parts[2]);
-
-                document.getElementById("lobby").style.display = "none";
-                document.getElementById("hud").style.display = "block";
-                document.getElementById("hud-role").innerText = myRole;
-                document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
-
-                const existingCanvas = document.querySelector('canvas');
-                if (existingCanvas) {
-                    existingCanvas.remove();
-                }
-
-                build3DWorld(myRole, matrix);
-            } else if(msg.startsWith("PLAYER_MOVED|")) {
-                const parts = msg.split("|");
-                targetPos.r = parseInt(parts[1]);
-                targetPos.c = parseInt(parts[2]);
-            } else if(msg.startsWith("STAGE_UPDATE:")) {
-                const backendStage = msg.split(":")[1];
-                globalRoundCounter = parseInt(backendStage);
-                sessionStorage.setItem("mazeStage", globalRoundCounter);
-                document.getElementById("hud-stage").innerText = globalRoundCounter + "/5";
-            }
-        };
-
-        function build3DWorld(role, matrix) {
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x7ec0ee);
-            scene.fog = new THREE.FogExp2(0x7ec0ee, 0.015);
-
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            document.body.appendChild(renderer.domElement);
-
-            const mapRows = matrix.length;
-            const mapCols = matrix[0].length;
-            const centerR = mapRows / 2 - 0.5;
-            const centerC = mapCols / 2 - 0.5;
-
-            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambient);
-            
-            const sunLight = new THREE.DirectionalLight(0xfffaed, 0.8);
-            sunLight.position.set(centerC - 10, 20, centerR - 10);
-            sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
-            scene.add(sunLight);
-
-            const floorGeo = new THREE.PlaneGeometry(mapCols * 3, mapRows * 3);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x557a2b, roughness: 0.9 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(centerC, 0, centerR);
-            floor.receiveShadow = true;
-            scene.add(floor);
-
-            const wallGeo = new THREE.BoxGeometry(1, 2.2, 1);
-            const hedgeMatVisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, roughness: 0.8 });
-            const hedgeMatInvisible = new THREE.MeshStandardMaterial({ color: 0x2e5c1e, transparent: true, opacity: 0.02 });
-
-            for (let r = 0; r < mapRows; r++) {
-                for (let c = 0; c < mapCols; c++) {
-                    if (matrix[r][c] === 2) {
-                        currentPos.r = r; currentPos.c = c;
-                        targetPos.r = r; targetPos.c = c;
-                    }
-                }
-            }
-
-            for (let r = 0; r < mapRows; r++) {
-                for (let c = 0; c < mapCols; c++) {
-                    const cell = matrix[r][c];
-                    
-                    if (cell === 1) {
-                        const material = (role === "NAVIGATOR") ? hedgeMatVisible : hedgeMatInvisible;
-                        const wallMesh = new THREE.Mesh(wallGeo, material);
-                        wallMesh.position.set(c, 1.1, r);
-                        wallMesh.castShadow = (role === "NAVIGATOR");
-                        wallMesh.receiveShadow = (role === "NAVIGATOR");
-                        scene.add(wallMesh);
-                    } else if (cell === 2) {
-                        const start = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.02, 0.9), new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.7 }));
-                        start.position.set(c, 0.01, r);
-                        scene.add(start);
-                    } else if (cell === 3) {
-                        const end = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.1, 0.9), new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.2 }));
-                        end.position.set(c, 0.05, r);
-                        scene.add(end);
-                    }
-                }
-            }
-
-            playerGroup = new THREE.Group();
-            
-            const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), new THREE.MeshStandardMaterial({ color: 0xd35400 }));
-            bodyMesh.position.y = 0.55;
-            bodyMesh.castShadow = true;
-            playerGroup.add(bodyMesh);
-
-            const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
-            headMesh.position.y = 0.95;
-            headMesh.castShadow = true;
-            playerGroup.add(headMesh);
-
-            const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 16), new THREE.MeshStandardMaterial({ color: 0xdebe72 }));
-            hatBrim.position.y = 1.05;
-            playerGroup.add(hatBrim);
-
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
-            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.12), legMat);
-            leftLeg.position.set(-0.12, 0.15, 0);
-            leftLeg.castShadow = true;
-            playerGroup.add(leftLeg);
-
-            const rightLeg = leftLeg.clone();
-            rightLeg.position.x = 0.12;
-            playerGroup.add(rightLeg);
-
-            playerGroup.position.set(currentPos.c, 0, currentPos.r);
-            scene.add(playerGroup);
-
-            let controls = null;
-            if (role === "NAVIGATOR") {
-                camera.position.set(centerC, mapCols * 1.0, centerR + mapRows * 0.4);
-                
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.target.set(centerC, 0, centerR);
-                
-                controls.enablePan = true;
-                controls.screenSpacePanning = false; 
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.maxPolarAngle = Math.PI / 2.3;
-
-                controls.mouseButtons = {
-                    LEFT: THREE.MOUSE.PAN,       
-                    MIDDLE: THREE.MOUSE.DOLLY,   
-                    RIGHT: THREE.MOUSE.ROTATE    
-                };
-                
-                renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
-            } else {
-                camera.position.set(currentPos.c, 4, currentPos.r + 3); 
-                camera.lookAt(currentPos.c, 0.5, currentPos.r);
-            }
-
-            window.addEventListener('keydown', (e) => {
-                if(myRole !== "EXPLORER") return;
-
-                let nextR = targetPos.r;
-                let nextC = targetPos.c;
-
-                if (e.key === 'w' || e.key === 'ArrowUp') nextR--;
-                if (e.key === 's' || e.key === 'ArrowDown') nextR++;
-                if (e.key === 'a' || e.key === 'ArrowLeft') nextC--;
-                if (e.key === 'd' || e.key === 'ArrowRight') nextC++;
-
-                if(nextR !== targetPos.r || nextC !== targetPos.c) {
-                    socket.send("MOVE:" + nextR + "," + nextC);
-                }
-            });
-
-            function renderFrame() {
-                requestAnimationFrame(renderFrame);
-
-                currentPos.c += (targetPos.c - currentPos.c) * 0.15;
-                currentPos.r += (targetPos.r - currentPos.r) * 0.15;
-                
-                if(playerGroup) {
-                    playerGroup.position.set(currentPos.c, 0, currentPos.r);
-
-                    const diffC = targetPos.c - currentPos.c;
-                    const diffR = targetPos.r - currentPos.r;
-                    if (Math.abs(diffC) > 0.01 || Math.abs(diffR) > 0.01) {
-                        playerGroup.rotation.y = Math.atan2(diffC, diffR);
-                    }
-                }
-
-                if (role === "NAVIGATOR") {
-                    if (controls) controls.update();
-                } else {
-                    camera.position.x += (currentPos.c - camera.position.x) * 0.08;
-                    camera.position.z += ((currentPos.r + 3.5) - camera.position.z) * 0.08;
-                    camera.position.y = 4.5;
-                    camera.lookAt(currentPos.c, 0.6, currentPos.r);
-                }
-
-                renderer.render(scene, camera);
-            }
-            renderFrame();
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
-    </script>
-</body>
-</html> -->
