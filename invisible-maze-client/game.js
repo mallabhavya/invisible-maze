@@ -2,7 +2,7 @@
 const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
 // IMPORTANT: Replace the placeholder below with your actual Render URL after deploying!
-const wsHost = isLocal ? "localhost:8085" : "https://invisible-maze-p063.onrender.com";
+const wsHost = isLocal ? "localhost:8085" : "invisible-maze-p063.onrender.com";
 const socket = new WebSocket(`${wsProtocol}${wsHost}/game`);
 const statusText = document.getElementById("status");
 let currentPos = { r: 0, c: 0 };
